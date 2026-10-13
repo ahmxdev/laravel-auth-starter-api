@@ -10,9 +10,10 @@ Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:lo
 Route::group(['middleware' => ['auth:sanctum']], function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/me', [AuthController::class, 'me']);
-
-    Route::post('/email/verification-notification', [AuthController::class, 'sendVerificationEmail'])->middleware('throttle:verification-notification');
 });
+
+Route::post('/email/verification-notification', [AuthController::class, 'sendVerificationEmail'])->middleware('throttle:verification-notification');
+
 Route::post('/email/verify/{id}/{hash}', [AuthController::class, 'verifyEmail'])
     ->name('verification.verify')
     ->middleware(['signed', 'throttle:verify-email']);

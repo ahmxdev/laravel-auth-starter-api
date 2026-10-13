@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
 use App\Http\Requests\Auth\RegisterRequest;
+use App\Http\Requests\Auth\SendVerificationEmailRequest;
 use App\Http\Requests\Auth\VerifyEmailRequest;
 use App\Http\Resources\UserResource;
 use App\Models\User;
@@ -37,15 +38,13 @@ class AuthController extends Controller
             ], 401);
         }
 
-        $token = $user->createToken('auth-token');
-
         if (! $user->hasVerifiedEmail()) {
             return response()->json([
-                'message' => 'Email not verified.',
-                'user' => new UserResource($user),
-                'token' => $token->plainTextToken
+                'message' => 'Email not verified.'
             ], 403);
         }
+
+        $token = $user->createToken('auth-token');
 
         return response()->json([
             'message' => 'User logged in successfully.',
@@ -81,14 +80,14 @@ class AuthController extends Controller
             'message' => 'Email verified successfully.'
         ], 200);
     }
-    public function sendVerificationEmail(Request $request)
+    public function sendVerificationEmail(SendVerificationEmailRequest $request)
     {
-        $user = $request->user();
+        $user = User::where('email', $request->validated('email'))->first();
 
-        if ($user->hasVerifiedEmail()) {
+        if (! $user || $user->hasVerifiedEmail()) {
             return response()->json([
-                'message' => 'Email already verified.'
-            ], 409);
+                'message' => 'Verification link sent successfully.'
+            ], 200);
         }
 
         $user->sendEmailVerificationNotification();

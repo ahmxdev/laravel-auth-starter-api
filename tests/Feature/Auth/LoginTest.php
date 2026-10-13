@@ -4,6 +4,7 @@ use App\Models\User;
 
 use function Pest\Laravel\assertDatabaseCount;
 use function Pest\Laravel\assertDatabaseHas;
+use function Pest\Laravel\assertDatabaseMissing;
 use function Pest\Laravel\postJson;
 
 test('guest can login with verified email', function () {
@@ -49,7 +50,7 @@ test('guest can login with verified email', function () {
     expect($response->json('token'))->toBeString()->not->toBeEmpty();
 });
 
-test('guest can login with unverified email', function () {
+test('guest cannot login with unverified email', function () {
 
     $password = fake()->password(8);
     $user = User::factory()->create([
@@ -69,27 +70,14 @@ test('guest can login with unverified email', function () {
 
     $response->assertForbidden();
 
-    assertDatabaseHas('personal_access_tokens', [
+    assertDatabaseMissing('personal_access_tokens', [
         'tokenable_type' => User::class,
         'tokenable_id' => $user->id,
     ]);
 
-    $response->assertJsonStructure([
-        'message',
-        'user' => [
-            'name',
-            'email',
-            'created_at',
-            'updated_at',
-        ],
-        'token'
-    ]);
     $response->assertJson([
-        'user' => [
-            'email' => $data['email'],
-        ]
+        'message' => 'Email not verified.'
     ]);
-    expect($response->json('token'))->toBeString()->not->toBeEmpty();
 });
 
 test('wrong password', function () {

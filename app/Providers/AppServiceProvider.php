@@ -35,9 +35,12 @@ class AppServiceProvider extends ServiceProvider
         });
 
         RateLimiter::for('verification-notification', function (Request $request) {
+            $email = strtolower(trim((string) $request->input('email', '')));
+
             return [
-                Limit::perMinute(10)->by($request->ip()),
-                Limit::perMinute(2)->by($request->user()->id),
+                Limit::perMinute(10)->by('ip:' . $request->ip()),
+                Limit::perMinute(2)->by('email-minute:' . $email),
+                Limit::perHour(5)->by('email-hour:' . $email),
             ];
         });
 

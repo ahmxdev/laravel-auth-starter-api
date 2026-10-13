@@ -93,7 +93,7 @@ test('email verification cannot be requested more than 10 times from the same IP
 });
 
 // Tests for 'email/verification-notification'
-test('authenticated unverified user can request verification email', function () {
+test('unverified user can request verification for registered email', function () {
     Notification::fake();
 
     $user = User::factory()->create([
@@ -102,9 +102,9 @@ test('authenticated unverified user can request verification email', function ()
         'password' => fake()->password(8),
     ]);
 
-    Sanctum::actingAs($user);
-
-    $response = postJson('/api/email/verification-notification');
+    $response = postJson('/api/email/verification-notification', [
+        'email' => $user->email
+    ]);
 
     $response->assertOk();
     $response->assertJson([
@@ -113,38 +113,45 @@ test('authenticated unverified user can request verification email', function ()
     Notification::assertSentTo($user, VerifyEmailNotification::class);
 });
 
-test('authenticated verified user cannot request verification email', function () {
+test('guest user cannot request verification email for unregistered email', function () {
+    $response = postJson('/api/email/verification-notification', [
+        'email' => fake()->email()
+    ]);
+
+    $response->assertOk();
+    $response->assertJson([
+        'message' => 'Verification link sent successfully.'
+    ]);
+});
+
+test('verified user cannot request verification email', function () {
     Notification::fake();
 
     $user = User::factory()->verified()->create();
 
-    Sanctum::actingAs($user);
+    $response = postJson('/api/email/verification-notification', [
+        'email' => $user->email
+    ]);
 
-    $response = postJson('/api/email/verification-notification');
-
-    $response->assertConflict();
+    $response->assertOk();
     $response->assertJson([
-        'message' => 'Email already verified.'
+        'message' => 'Verification link sent successfully.'
     ]);
     Notification::assertNothingSent();
 });
 
-test('guest cannot request verification email', function () {
-    $response = postJson('/api/email/verification-notification');
-
-    $response->assertUnauthorized();
-});
-
-test('authenticated user cannot request more than 2 verification emails', function () {
+test('guest user cannot request more than 2 verification emails', function () {
     $user = User::factory()->create();
 
-    Sanctum::actingAs($user);
-
     for ($i = 1; $i <= 2; $i++) {
-        postJson('/api/email/verification-notification');
+        postJson('/api/email/verification-notification', [
+            'email' => $user->email
+        ]);
     }
 
-    $response = postJson('/api/email/verification-notification');
+    $response = postJson('/api/email/verification-notification', [
+        'email' => $user->email
+    ]);
 
     $response->assertTooManyRequests();
 });
@@ -152,13 +159,15 @@ test('authenticated user cannot request more than 2 verification emails', functi
 test('verification notification cannot be requested more than 10 times from the same IP', function () {
     $user = User::factory()->create();
 
-    Sanctum::actingAs($user);
-
     for ($i = 1; $i <= 10; $i++) {
-        postJson('/api/email/verification-notification');
+        postJson('/api/email/verification-notification', [
+            'email' => fake()->email()
+        ]);
     }
 
-    $response = postJson('/api/email/verification-notification');
+    $response = postJson('/api/email/verification-notification', [
+        'email' => $user->email
+    ]);
 
     $response->assertTooManyRequests();
 });

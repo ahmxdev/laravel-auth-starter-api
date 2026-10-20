@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Auth\ForgotPasswordRequest;
 use App\Http\Requests\Auth\LoginRequest;
 use App\Http\Requests\Auth\RegisterRequest;
 use App\Http\Requests\Auth\SendVerificationEmailRequest;
@@ -12,6 +13,7 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Password;
 
 class AuthController extends Controller
 {
@@ -95,5 +97,25 @@ class AuthController extends Controller
         return response()->json([
             'message' => 'Verification link sent successfully.'
         ], 200);
+    }
+    public function forgotPassword(ForgotPasswordRequest $request)
+    {
+        $status = Password::sendResetLink(
+            $request->only('email')
+        );
+
+        if (in_array($status, [
+            Password::ResetLinkSent,
+            Password::InvalidUser,
+            Password::ResetThrottled,
+        ], true)) {
+            return response()->json([
+                'message' => 'If the email is registered and eligible, reset instructions will be sent.',
+            ], 200);
+        }
+
+        return response()->json([
+            'message' => __($status),
+        ], 422);
     }
 }

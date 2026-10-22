@@ -1,13 +1,17 @@
 <?php
 
 use App\Models\User;
+use App\Notifications\Auth\VerifyEmailNotification;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Notification;
 
 use function Pest\Laravel\assertDatabaseHas;
 use function Pest\Laravel\assertDatabaseMissing;
 use function Pest\Laravel\postJson;
 
 test('guest can create an account', function () {
+    Notification::fake();
+
     $data = [
         'name' => fake()->name(),
         'email' => fake()->email(),
@@ -45,6 +49,9 @@ test('guest can create an account', function () {
 
     $user = User::where('email', $data['email'])->first();
     expect(Hash::check($data['password'], $user->password))->toBeTrue();
+
+    Notification::assertSentTo($user, VerifyEmailNotification::class);
+    Notification::assertSentTimes(VerifyEmailNotification::class, 1);
 });
 
 test('test validations', function ($data) {

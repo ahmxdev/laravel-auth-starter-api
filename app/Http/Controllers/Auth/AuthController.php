@@ -12,6 +12,7 @@ use App\Http\Requests\Auth\VerifyEmailRequest;
 use App\Http\Resources\UserResource;
 use App\Models\User;
 use Illuminate\Auth\Events\PasswordReset;
+use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -25,6 +26,7 @@ class AuthController extends Controller
         $data = $request->validated();
 
         $user = User::create($data);
+        event(new Registered($user));
 
         return response()->json([
             'message' => 'User created successfully.',
@@ -131,10 +133,17 @@ class AuthController extends Controller
                     'password' => $password,
                 ]);
                 $user->save();
+                $user->tokens()->delete();
 
                 event(new PasswordReset($user));
             }
         );
+
+        if (in_array($status, [Password::InvalidUser, Password::InvalidToken], true)) {
+            return response()->json([
+                'message' => 'The password reset link is invalid or expired.',
+            ], 422);
+        }
 
         if ($status === Password::PasswordReset) {
             return response()->json([

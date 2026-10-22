@@ -14,6 +14,8 @@ test('returns 200 and updates the password when the reset token is valid', funct
     $user = User::factory()->create([
         'password' => 'Old-password-123!',
     ]);
+    $user->createToken('first-device');
+    $user->createToken('second-device');
 
     $token = Password::broker()->createToken($user);
     $newPassword = 'New-password-456!';
@@ -38,6 +40,10 @@ test('returns 200 and updates the password when the reset token is valid', funct
     assertDatabaseMissing('password_reset_tokens', [
         'email' => $user->email,
     ]);
+    assertDatabaseMissing('personal_access_tokens', [
+        'tokenable_type' => User::class,
+        'tokenable_id' => $user->id,
+    ]);
 
     Event::assertDispatched(PasswordReset::class, function (PasswordReset $event) use ($user): bool {
         return $event->user->is($user);
@@ -61,7 +67,7 @@ test('returns 422 and leaves the password unchanged when the reset token is inva
 
     $response->assertUnprocessable();
     $response->assertExactJson([
-        'message' => 'This password reset token is invalid.',
+        'message' => 'The password reset link is invalid or expired.',
     ]);
 
     expect(Hash::check('Old-password-123!', $user->fresh()->password))->toBeTrue();
@@ -90,7 +96,7 @@ test('returns 422 when the reset token has expired', function () {
 
     $response->assertUnprocessable();
     $response->assertExactJson([
-        'message' => 'This password reset token is invalid.',
+        'message' => 'The password reset link is invalid or expired.',
     ]);
 
     expect(Hash::check('Old-password-123!', $user->fresh()->password))->toBeTrue();
@@ -106,7 +112,7 @@ test('returns 422 when the email is not registered', function () {
 
     $response->assertUnprocessable();
     $response->assertExactJson([
-        'message' => "We can't find a user with that email address.",
+        'message' => 'The password reset link is invalid or expired.',
     ]);
 });
 

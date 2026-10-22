@@ -132,6 +132,24 @@ test('not-existing email', function () {
     assertDatabaseCount('personal_access_tokens', 0);
 });
 
+test('rejects a non-string password during validation', function () {
+    $response = postJson('/api/login', [
+        'email' => 'user@example.test',
+        'password' => ['invalid-password'],
+    ]);
+
+    $response->assertUnprocessable();
+    $response->assertExactJson([
+        'message' => 'The password field must be a string.',
+        'errors' => [
+            'password' => [
+                'The password field must be a string.',
+            ],
+        ],
+    ]);
+    assertDatabaseCount('personal_access_tokens', 0);
+});
+
 test('login cannot be requested more than 5 times for the same email', function () {
     $email = fake()->email();
 

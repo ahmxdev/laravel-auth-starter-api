@@ -22,3 +22,7 @@ Route::post('/email/verify/{id}/{hash}', [AuthController::class, 'verifyEmail'])
 Route::post('/forgot-password', [AuthController::class, 'forgotPassword'])
     ->middleware(['guest', 'throttle:forgot-password'])
     ->name('password.email');
+
+Route::post('/reset-password', [AuthController::class, 'resetPassword'])
+    ->middleware(['guest', 'throttle:reset-password'])
+    ->name('password.update');

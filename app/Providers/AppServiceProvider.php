@@ -56,6 +56,16 @@ class AppServiceProvider extends ServiceProvider
             ];
         });
 
+        RateLimiter::for('reset-password', function (Request $request) {
+            $email = strtolower(trim((string) $request->input('email', '')));
+
+            return [
+                Limit::perMinute(10)->by('ip:' . $request->ip()),
+                Limit::perMinute(2)->by('email-minute:' . $email),
+                Limit::perHour(5)->by('email-hour:' . $email),
+            ];
+        });
+
         RateLimiter::for('verify-email', function (Request $request) {
             return Limit::perMinute(10)->by($request->ip());
         });

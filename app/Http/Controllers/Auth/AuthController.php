@@ -6,10 +6,13 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\ForgotPasswordRequest;
 use App\Http\Requests\Auth\LoginRequest;
 use App\Http\Requests\Auth\RegisterRequest;
+use App\Http\Requests\Auth\ResetPasswordRequest;
 use App\Http\Requests\Auth\SendVerificationEmailRequest;
 use App\Http\Requests\Auth\VerifyEmailRequest;
 use App\Http\Resources\UserResource;
 use App\Models\User;
+use Illuminate\Auth\Events\PasswordReset;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -112,6 +115,31 @@ class AuthController extends Controller
             return response()->json([
                 'message' => 'If the email is registered and eligible, reset instructions will be sent.',
             ], 200);
+        }
+
+        return response()->json([
+            'message' => __($status),
+        ], 422);
+    }
+
+    public function resetPassword(ResetPasswordRequest $request): JsonResponse
+    {
+        $status = Password::reset(
+            $request->validated(),
+            function (User $user, string $password): void {
+                $user->forceFill([
+                    'password' => $password,
+                ]);
+                $user->save();
+
+                event(new PasswordReset($user));
+            }
+        );
+
+        if ($status === Password::PasswordReset) {
+            return response()->json([
+                'message' => __($status),
+            ]);
         }
 
         return response()->json([

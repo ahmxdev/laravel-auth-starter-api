@@ -1,58 +1,110 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Laravel Auth Starter API
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+A JSON API starter for authentication built with Laravel and Sanctum. It includes registration, email verification, bearer-token authentication, logout, and password reset. It does not include an authorization or roles system.
 
-## About Laravel
+## Features
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+- Register users and send email verification links.
+- Issue Sanctum personal access tokens after verified users log in.
+- View the authenticated user's profile and revoke the current token on logout.
+- Request and complete password resets. Successful resets revoke all of the user's tokens.
+- Validate requests and rate-limit authentication and email endpoints.
+- Return generic responses for password-reset and verification requests to avoid revealing whether an email is registered.
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## Requirements
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+- PHP 8.3 through 8.x
+- Composer
+- MySQL
 
-## Learning Laravel
-
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
-
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
-
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
-
-## Agentic Development
-
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
+## Setup
 
 ```bash
-composer require laravel/boost --dev
-
-php artisan boost:install
+cp .env.example .env
+composer install
+php artisan key:generate
 ```
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+Create a MySQL database, then configure `DB_DATABASE`, `DB_USERNAME`, and `DB_PASSWORD` in `.env`. Set `APP_URL` to the API base URL and `FRONTEND_URL` to the frontend that will handle the email links. This repository does not include a frontend.
 
-## Contributing
+The example environment uses `MAIL_MAILER=log`, so email messages are written to `storage/logs/laravel.log`. Configure a mail transport in `.env` to deliver real email.
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+Run migrations and start the API:
 
-## Code of Conduct
+```bash
+php artisan migrate
+php artisan serve
+```
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+The local API base URL is `http://127.0.0.1:8000`.
 
-## Security Vulnerabilities
+## API
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+All endpoints use the `/api` prefix and accept or return JSON. Protected endpoints require a Sanctum bearer token:
 
-## License
+```http
+Authorization: Bearer <token>
+```
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+| Method | Endpoint                               | Authentication | Purpose                                                 |
+| ------ | -------------------------------------- | -------------- | ------------------------------------------------------- |
+| `POST` | `/api/register`                        | No             | Create an account and send a verification email.        |
+| `POST` | `/api/login`                           | No             | Log in with a verified email and receive a token.       |
+| `GET`  | `/api/me`                              | Bearer token   | Return the authenticated user's profile.                |
+| `POST` | `/api/logout`                          | Bearer token   | Revoke the current token.                               |
+| `POST` | `/api/email/verification-notification` | No             | Request an email verification link.                     |
+| `POST` | `/api/email/verify/{id}/{hash}`        | Signed URL     | Verify an email using the signed link from the message. |
+| `POST` | `/api/forgot-password`                 | No             | Request a password reset link.                          |
+| `POST` | `/api/reset-password`                  | No             | Set a new password using the reset token.               |
+
+### Request fields
+
+| Endpoint                               | JSON body                                             |
+| -------------------------------------- | ----------------------------------------------------- |
+| `/api/register`                        | `name`, `email`, `password`, `password_confirmation`  |
+| `/api/login`                           | `email`, `password`                                   |
+| `/api/email/verification-notification` | `email`                                               |
+| `/api/forgot-password`                 | `email`                                               |
+| `/api/reset-password`                  | `email`, `token`, `password`, `password_confirmation` |
+
+Verification emails point to `FRONTEND_URL/email/verify?url=<signed-api-url>`. The frontend should submit that signed URL to the API with `POST`; it expires after 60 minutes. Password-reset emails point to `FRONTEND_URL/reset-password?token=<token>&email=<email>`. Reset tokens also expire after 60 minutes, and the password broker waits 60 seconds before issuing another link. Sanctum tokens expire after 24 hours.
+
+Example login request:
+
+```bash
+curl -X POST http://127.0.0.1:8000/api/login \
+  -H "Accept: application/json" \
+  -H "Content-Type: application/json" \
+  -d '{"email":"user@example.com","password":"your-password"}'
+```
+
+Use the returned `token` as a bearer token for `/api/me` and `/api/logout`.
+
+### Response behavior
+
+- Registration returns `201`; validation failures return `422`.
+- Login returns `401` for invalid credentials, `403` when the account email is not verified, and `422` for invalid input.
+- Protected endpoints return `401` when the bearer token is missing or invalid.
+- Email verification returns `200`, returns `409` if the email is already verified, and returns `403` for an expired or invalid signed URL.
+- Password-reset requests return the same `200` response for registered and unregistered email addresses. Invalid, expired, or unregistered reset tokens return the same `422` response.
+- Verification-email requests return the same `200` response for unregistered or already verified email addresses.
+- Route-level rate-limit violations return `429`. If the password broker is still in its 60-second cooldown, forgot-password returns the same generic `200` response and sends no new link.
+- Successful password resets revoke all existing Sanctum tokens for that user.
+
+### Rate limits
+
+| Endpoint                                            | Limit                                                       |
+| --------------------------------------------------- | ----------------------------------------------------------- |
+| Register                                            | 5 requests per minute per IP                                |
+| Login                                               | 5 per minute per email; 30 per minute per IP                |
+| Verification email, forgot password, reset password | 2 per minute and 5 per hour per email; 10 per minute per IP |
+| Verify email link                                   | 10 per minute per IP                                        |
+| Password-reset broker                               | 60 seconds between reset-link sends per email               |
+
+## Tests
+
+The test suite uses Pest and an in-memory SQLite database configured in `phpunit.xml`. Enable PHP's `pdo_sqlite` extension to run it.
+
+```bash
+php artisan test --compact
+```

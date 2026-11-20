@@ -6,7 +6,6 @@ use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\URL;
 use Laravel\Sanctum\Sanctum;
 
-use function Pest\Laravel\getJson;
 use function Pest\Laravel\postJson;
 
 // Tests for 'email/verify/{id}/{hash}'
@@ -30,7 +29,7 @@ test('unverified unauthenticated user can verify their email using verification 
 
     $response->assertOk();
     $response->assertJson([
-        'message' => 'Email verified successfully.'
+        'message' => 'Email verified successfully.',
     ]);
 
     $user->refresh();
@@ -52,7 +51,7 @@ test('verified user cannot verify their email again', function () {
 
     $response->assertConflict();
     $response->assertJson([
-        'message' => 'Email already verified.'
+        'message' => 'Email already verified.',
     ]);
 
     expect($user->email_verified_at)->not->toBeNull();
@@ -84,10 +83,10 @@ test('expired verification url is rejected', function () {
 });
 test('email verification cannot be requested more than 10 times from the same IP', function () {
     for ($i = 1; $i <= 10; $i++) {
-        postJson('/api/email/verify/1/hash');
+        postJson('/api/v1/email/verify/1/hash');
     }
 
-    $response = postJson('/api/email/verify/1/hash');
+    $response = postJson('/api/v1/email/verify/1/hash');
 
     $response->assertTooManyRequests();
 });
@@ -102,25 +101,25 @@ test('unverified user can request verification for registered email', function (
         'password' => fake()->password(8),
     ]);
 
-    $response = postJson('/api/email/verification-notification', [
-        'email' => $user->email
+    $response = postJson('/api/v1/email/verification-notification', [
+        'email' => $user->email,
     ]);
 
     $response->assertOk();
     $response->assertJson([
-        'message' => 'Verification link sent successfully.'
+        'message' => 'Verification link sent successfully.',
     ]);
     Notification::assertSentTo($user, VerifyEmailNotification::class);
 });
 
 test('guest user cannot request verification email for unregistered email', function () {
-    $response = postJson('/api/email/verification-notification', [
-        'email' => fake()->email()
+    $response = postJson('/api/v1/email/verification-notification', [
+        'email' => fake()->email(),
     ]);
 
     $response->assertOk();
     $response->assertJson([
-        'message' => 'Verification link sent successfully.'
+        'message' => 'Verification link sent successfully.',
     ]);
 });
 
@@ -129,13 +128,13 @@ test('verified user cannot request verification email', function () {
 
     $user = User::factory()->verified()->create();
 
-    $response = postJson('/api/email/verification-notification', [
-        'email' => $user->email
+    $response = postJson('/api/v1/email/verification-notification', [
+        'email' => $user->email,
     ]);
 
     $response->assertOk();
     $response->assertJson([
-        'message' => 'Verification link sent successfully.'
+        'message' => 'Verification link sent successfully.',
     ]);
     Notification::assertNothingSent();
 });
@@ -144,13 +143,13 @@ test('guest user cannot request more than 2 verification emails', function () {
     $user = User::factory()->create();
 
     for ($i = 1; $i <= 2; $i++) {
-        postJson('/api/email/verification-notification', [
-            'email' => $user->email
+        postJson('/api/v1/email/verification-notification', [
+            'email' => $user->email,
         ]);
     }
 
-    $response = postJson('/api/email/verification-notification', [
-        'email' => $user->email
+    $response = postJson('/api/v1/email/verification-notification', [
+        'email' => $user->email,
     ]);
 
     $response->assertTooManyRequests();
@@ -160,13 +159,13 @@ test('verification notification cannot be requested more than 10 times from the 
     $user = User::factory()->create();
 
     for ($i = 1; $i <= 10; $i++) {
-        postJson('/api/email/verification-notification', [
-            'email' => fake()->email()
+        postJson('/api/v1/email/verification-notification', [
+            'email' => fake()->email(),
         ]);
     }
 
-    $response = postJson('/api/email/verification-notification', [
-        'email' => $user->email
+    $response = postJson('/api/v1/email/verification-notification', [
+        'email' => $user->email,
     ]);
 
     $response->assertTooManyRequests();

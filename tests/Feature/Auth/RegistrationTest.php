@@ -6,7 +6,6 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Notification;
 
 use function Pest\Laravel\assertDatabaseHas;
-use function Pest\Laravel\assertDatabaseMissing;
 use function Pest\Laravel\postJson;
 
 test('guest can create an account', function () {
@@ -16,13 +15,11 @@ test('guest can create an account', function () {
         'name' => fake()->name(),
         'email' => fake()->email(),
         'password' => fake()->password(8),
-        'password_confirmation' => ''
+        'password_confirmation' => '',
     ];
     $data['password_confirmation'] = $data['password'];
 
-
-    $response = postJson('/api/register', $data);
-
+    $response = postJson('/api/v1/register', $data);
 
     $response->assertCreated();
 
@@ -38,13 +35,13 @@ test('guest can create an account', function () {
             'email',
             'created_at',
             'updated_at',
-        ]
+        ],
     ]);
     $response->assertJson([
         'user' => [
             'name' => $data['name'],
             'email' => $data['email'],
-        ]
+        ],
     ]);
 
     $user = User::where('email', $data['email'])->first();
@@ -62,7 +59,7 @@ test('test validations', function ($data) {
         'password' => fake()->password(8),
     ]);
 
-    $response = postJson('/api/register', $data);
+    $response = postJson('/api/v1/register', $data);
 
     $response->assertUnprocessable();
 })->with([
@@ -70,41 +67,41 @@ test('test validations', function ($data) {
         'name' => '',
         'email' => 'valid@valid.com',
         'password' => 'password123',
-        'password_confirmation' => 'password123'
+        'password_confirmation' => 'password123',
     ]],
 
     [[
         'name' => 'Ahmad',
         'email' => 'abc',
         'password' => 'password123',
-        'password_confirmation' => 'password123'
+        'password_confirmation' => 'password123',
     ]],
 
     [[
         'name' => 'Ahmad',
         'email' => 'used@used.com',
         'password' => 'password123',
-        'password_confirmation' => 'password123'
+        'password_confirmation' => 'password123',
     ]],
 
     [[
         'name' => 'Ahmad',
         'email' => 'valid@valid.com',
         'password' => 'password123',
-        'password_confirmation' => 'different_password'
+        'password_confirmation' => 'different_password',
     ]],
 ]);
 
 test('register cannot be requested more than 5 times from the same IP', function () {
     for ($i = 1; $i <= 5; $i++) {
-        postJson('/api/register', [
+        postJson('/api/v1/register', [
             'name' => fake()->name(),
             'email' => fake()->unique()->safeEmail(),
             'password' => 'password',
         ]);
     }
 
-    $response = postJson('/api/register', [
+    $response = postJson('/api/v1/register', [
         'name' => fake()->name(),
         'email' => fake()->unique()->safeEmail(),
         'password' => 'password',

@@ -18,12 +18,10 @@ test('guest can login with verified email', function () {
 
     $data = [
         'email' => $user->email,
-        'password' => $password
+        'password' => $password,
     ];
 
-
-    $response = postJson('/api/login', $data);
-
+    $response = postJson('/api/v1/login', $data);
 
     $response->assertOk();
 
@@ -40,12 +38,12 @@ test('guest can login with verified email', function () {
             'created_at',
             'updated_at',
         ],
-        'token'
+        'token',
     ]);
     $response->assertJson([
         'user' => [
             'email' => $data['email'],
-        ]
+        ],
     ]);
     expect($response->json('token'))->toBeString()->not->toBeEmpty();
 });
@@ -61,12 +59,10 @@ test('guest cannot login with unverified email', function () {
 
     $data = [
         'email' => $user->email,
-        'password' => $password
+        'password' => $password,
     ];
 
-
-    $response = postJson('/api/login', $data);
-
+    $response = postJson('/api/v1/login', $data);
 
     $response->assertForbidden();
 
@@ -76,7 +72,7 @@ test('guest cannot login with unverified email', function () {
     ]);
 
     $response->assertJson([
-        'message' => 'Email not verified.'
+        'message' => 'Email not verified.',
     ]);
 });
 
@@ -90,20 +86,18 @@ test('wrong password', function () {
 
     $data = [
         'email' => $user->email,
-        'password' => '12345678'
+        'password' => '12345678',
     ];
 
-
-    $response = postJson('/api/login', $data);
-
+    $response = postJson('/api/v1/login', $data);
 
     $response->assertUnauthorized();
 
     $response->assertJsonStructure([
-        'message'
+        'message',
     ]);
     $response->assertJson([
-        'message' => 'Invalid credentials.'
+        'message' => 'Invalid credentials.',
     ]);
 
     assertDatabaseCount('personal_access_tokens', 0);
@@ -116,24 +110,22 @@ test('not-existing email', function () {
         'password' => fake()->password(8),
     ];
 
-
-    $response = postJson('/api/login', $data);
-
+    $response = postJson('/api/v1/login', $data);
 
     $response->assertUnauthorized();
 
     $response->assertJsonStructure([
-        'message'
+        'message',
     ]);
     $response->assertJson([
-        'message' => 'Invalid credentials.'
+        'message' => 'Invalid credentials.',
     ]);
 
     assertDatabaseCount('personal_access_tokens', 0);
 });
 
 test('rejects a non-string password during validation', function () {
-    $response = postJson('/api/login', [
+    $response = postJson('/api/v1/login', [
         'email' => 'user@example.test',
         'password' => ['invalid-password'],
     ]);
@@ -154,13 +146,13 @@ test('login cannot be requested more than 5 times for the same email', function 
     $email = fake()->email();
 
     for ($i = 1; $i <= 5; $i++) {
-        postJson('/api/login', [
+        postJson('/api/v1/login', [
             'email' => $email,
             'password' => 'password',
         ]);
     }
 
-    $response = postJson('/api/login', [
+    $response = postJson('/api/v1/login', [
         'email' => $email,
         'password' => 'password',
     ]);
@@ -170,13 +162,13 @@ test('login cannot be requested more than 5 times for the same email', function 
 
 test('login cannot be requested more than 30 times from the same IP', function () {
     for ($i = 1; $i <= 30; $i++) {
-        postJson('/api/login', [
+        postJson('/api/v1/login', [
             'email' => fake()->email(),
             'password' => 'password',
         ]);
     }
 
-    $response = postJson('/api/login', [
+    $response = postJson('/api/v1/login', [
         'email' => fake()->email(),
         'password' => 'password',
     ]);

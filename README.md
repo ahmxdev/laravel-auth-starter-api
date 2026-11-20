@@ -40,7 +40,7 @@ The local API base URL is `http://127.0.0.1:8000`.
 
 ## API
 
-All endpoints use the `/api` prefix and accept or return JSON. Protected endpoints require a Sanctum bearer token:
+All endpoints use the `/api/v1` prefix and accept or return JSON. Protected endpoints require a Sanctum bearer token:
 
 ```http
 Authorization: Bearer <token>
@@ -48,37 +48,37 @@ Authorization: Bearer <token>
 
 | Method | Endpoint                               | Authentication | Purpose                                                 |
 | ------ | -------------------------------------- | -------------- | ------------------------------------------------------- |
-| `POST` | `/api/register`                        | No             | Create an account and send a verification email.        |
-| `POST` | `/api/login`                           | No             | Log in with a verified email and receive a token.       |
-| `GET`  | `/api/me`                              | Bearer token   | Return the authenticated user's profile.                |
-| `POST` | `/api/logout`                          | Bearer token   | Revoke the current token.                               |
-| `POST` | `/api/email/verification-notification` | No             | Request an email verification link.                     |
-| `POST` | `/api/email/verify/{id}/{hash}`        | Signed URL     | Verify an email using the signed link from the message. |
-| `POST` | `/api/forgot-password`                 | No             | Request a password reset link.                          |
-| `POST` | `/api/reset-password`                  | No             | Set a new password using the reset token.               |
+| `POST` | `/api/v1/register`                        | No             | Create an account and send a verification email.        |
+| `POST` | `/api/v1/login`                           | No             | Log in with a verified email and receive a token.       |
+| `GET`  | `/api/v1/me`                              | Bearer token   | Return the authenticated user's profile.                |
+| `POST` | `/api/v1/logout`                          | Bearer token   | Revoke the current token.                               |
+| `POST` | `/api/v1/email/verification-notification` | No             | Request an email verification link.                     |
+| `POST` | `/api/v1/email/verify/{id}/{hash}`        | Signed URL     | Verify an email using the signed link from the message. |
+| `POST` | `/api/v1/forgot-password`                 | No             | Request a password reset link.                          |
+| `POST` | `/api/v1/reset-password`                  | No             | Set a new password using the reset token.               |
 
 ### Request fields
 
 | Endpoint                               | JSON body                                             |
 | -------------------------------------- | ----------------------------------------------------- |
-| `/api/register`                        | `name`, `email`, `password`, `password_confirmation`  |
-| `/api/login`                           | `email`, `password`                                   |
-| `/api/email/verification-notification` | `email`                                               |
-| `/api/forgot-password`                 | `email`                                               |
-| `/api/reset-password`                  | `email`, `token`, `password`, `password_confirmation` |
+| `/api/v1/register`                        | `name`, `email`, `password`, `password_confirmation`  |
+| `/api/v1/login`                           | `email`, `password`                                   |
+| `/api/v1/email/verification-notification` | `email`                                               |
+| `/api/v1/forgot-password`                 | `email`                                               |
+| `/api/v1/reset-password`                  | `email`, `token`, `password`, `password_confirmation` |
 
 Verification emails point to `FRONTEND_URL/email/verify?url=<signed-api-url>`. The frontend should submit that signed URL to the API with `POST`; it expires after 60 minutes. Password-reset emails point to `FRONTEND_URL/reset-password?token=<token>&email=<email>`. Reset tokens also expire after 60 minutes, and the password broker waits 60 seconds before issuing another link. Sanctum tokens expire after 24 hours.
 
 Example login request:
 
 ```bash
-curl -X POST http://127.0.0.1:8000/api/login \
+curl -X POST http://127.0.0.1:8000/api/v1/login \
   -H "Accept: application/json" \
   -H "Content-Type: application/json" \
   -d '{"email":"user@example.com","password":"your-password"}'
 ```
 
-Use the returned `token` as a bearer token for `/api/me` and `/api/logout`.
+Use the returned `token` as a bearer token for `/api/v1/me` and `/api/v1/logout`.
 
 ### Response behavior
 

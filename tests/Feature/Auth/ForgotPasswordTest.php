@@ -16,7 +16,7 @@ test('returns 200 and sends a reset notification for a registered email', functi
 
     Notification::fake();
 
-    $response = postJson('/api/forgot-password', [
+    $response = postJson('/api/v1/forgot-password', [
         'email' => $user->email,
     ]);
 
@@ -57,7 +57,7 @@ test('returns 200 and sends a reset notification for a registered email', functi
 });
 
 test('returns 422 when the email is missing', function () {
-    $response = postJson('/api/forgot-password');
+    $response = postJson('/api/v1/forgot-password');
 
     $response->assertUnprocessable();
     $response->assertExactJson([
@@ -71,7 +71,7 @@ test('returns 422 when the email is missing', function () {
 });
 
 test('returns 422 when the email is invalid', function () {
-    $response = postJson('/api/forgot-password', [
+    $response = postJson('/api/v1/forgot-password', [
         'email' => 'not-an-email',
     ]);
 
@@ -89,7 +89,7 @@ test('returns 422 when the email is invalid', function () {
 test('returns the generic 200 response without notifying an unregistered email', function () {
     Notification::fake();
 
-    $response = postJson('/api/forgot-password', [
+    $response = postJson('/api/v1/forgot-password', [
         'email' => 'unknown@example.test',
     ]);
 
@@ -107,13 +107,13 @@ test('returns the generic 200 response when the password broker throttles a rese
     Notification::fake();
 
     $this->freezeTime(function () use ($user): void {
-        $firstResponse = postJson('/api/forgot-password', [
+        $firstResponse = postJson('/api/v1/forgot-password', [
             'email' => $user->email,
         ]);
 
         $firstResponse->assertOk();
 
-        $secondResponse = postJson('/api/forgot-password', [
+        $secondResponse = postJson('/api/v1/forgot-password', [
             'email' => $user->email,
         ]);
 
@@ -130,14 +130,14 @@ test('forgot password cannot be requested more than 2 times per minute for the s
     $email = 'same-email@example.test';
 
     for ($attempt = 1; $attempt <= 2; $attempt++) {
-        $response = postJson('/api/forgot-password', [
+        $response = postJson('/api/v1/forgot-password', [
             'email' => $email,
         ]);
 
         $response->assertOk();
     }
 
-    $response = postJson('/api/forgot-password', [
+    $response = postJson('/api/v1/forgot-password', [
         'email' => $email,
     ]);
 
@@ -149,7 +149,7 @@ test('forgot password cannot be requested more than 5 times per hour for the sam
 
     $this->freezeTime(function () use ($email): void {
         for ($attempt = 1; $attempt <= 5; $attempt++) {
-            $response = postJson('/api/forgot-password', [
+            $response = postJson('/api/v1/forgot-password', [
                 'email' => $email,
             ]);
 
@@ -160,7 +160,7 @@ test('forgot password cannot be requested more than 5 times per hour for the sam
             }
         }
 
-        $response = postJson('/api/forgot-password', [
+        $response = postJson('/api/v1/forgot-password', [
             'email' => $email,
         ]);
 
@@ -170,14 +170,14 @@ test('forgot password cannot be requested more than 5 times per hour for the sam
 
 test('forgot password cannot be requested more than 10 times from the same IP', function () {
     for ($attempt = 1; $attempt <= 10; $attempt++) {
-        $response = postJson('/api/forgot-password', [
+        $response = postJson('/api/v1/forgot-password', [
             'email' => "ip-limit-{$attempt}@example.test",
         ]);
 
         $response->assertOk();
     }
 
-    $response = postJson('/api/forgot-password', [
+    $response = postJson('/api/v1/forgot-password', [
         'email' => 'ip-limit-final@example.test',
     ]);
 

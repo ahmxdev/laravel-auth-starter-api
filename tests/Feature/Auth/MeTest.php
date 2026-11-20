@@ -13,8 +13,8 @@ test('authenticated user can get their profile', function () {
 
     $token = $user->createToken('auth-token');
 
-    $response = getJson('/api/me', [
-        'Authorization' => 'Bearer ' . $token->plainTextToken,
+    $response = getJson('/api/v1/me', [
+        'Authorization' => 'Bearer '.$token->plainTextToken,
     ]);
 
     $response->assertOk();
@@ -36,9 +36,8 @@ test('authenticated user can get their profile', function () {
     ]);
 });
 
-
 test('guest cannot get their profile', function () {
-    $response = getJson('/api/me');
+    $response = getJson('/api/v1/me');
 
     $response->assertUnauthorized();
 });

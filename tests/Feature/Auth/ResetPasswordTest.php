@@ -22,7 +22,7 @@ test('returns 200 and updates the password when the reset token is valid', funct
 
     Event::fake([PasswordReset::class]);
 
-    $response = postJson('/api/reset-password', [
+    $response = postJson('/api/v1/reset-password', [
         'email' => $user->email,
         'token' => $token,
         'password' => $newPassword,
@@ -58,7 +58,7 @@ test('returns 422 and leaves the password unchanged when the reset token is inva
 
     Event::fake([PasswordReset::class]);
 
-    $response = postJson('/api/reset-password', [
+    $response = postJson('/api/v1/reset-password', [
         'email' => $user->email,
         'token' => 'invalid-reset-token',
         'password' => 'New-password-456!',
@@ -87,7 +87,7 @@ test('returns 422 when the reset token has expired', function () {
 
     $this->travel(config('auth.passwords.users.expire') + 1)->minutes();
 
-    $response = postJson('/api/reset-password', [
+    $response = postJson('/api/v1/reset-password', [
         'email' => $user->email,
         'token' => $token,
         'password' => 'New-password-456!',
@@ -103,7 +103,7 @@ test('returns 422 when the reset token has expired', function () {
 });
 
 test('returns 422 when the email is not registered', function () {
-    $response = postJson('/api/reset-password', [
+    $response = postJson('/api/v1/reset-password', [
         'email' => 'unregistered@example.test',
         'token' => 'some-reset-token',
         'password' => 'New-password-456!',
@@ -117,7 +117,7 @@ test('returns 422 when the email is not registered', function () {
 });
 
 test('returns validation errors when required reset fields are missing', function () {
-    $response = postJson('/api/reset-password');
+    $response = postJson('/api/v1/reset-password');
 
     $response->assertUnprocessable();
     $response->assertJsonPath('errors.email.0', 'The email field is required.');
@@ -126,7 +126,7 @@ test('returns validation errors when required reset fields are missing', functio
 });
 
 test('returns a validation error when the email is invalid', function () {
-    $response = postJson('/api/reset-password', [
+    $response = postJson('/api/v1/reset-password', [
         'email' => 'not-an-email',
         'token' => 'some-reset-token',
         'password' => 'New-password-456!',
@@ -145,7 +145,7 @@ test('returns a validation error when the email is invalid', function () {
 });
 
 test('returns a validation error when the password confirmation does not match', function () {
-    $response = postJson('/api/reset-password', [
+    $response = postJson('/api/v1/reset-password', [
         'email' => 'registered@example.test',
         'token' => 'some-reset-token',
         'password' => 'New-password-456!',
@@ -164,7 +164,7 @@ test('returns a validation error when the password confirmation does not match',
 });
 
 test('returns a validation error when the password is shorter than the registration requirement', function () {
-    $response = postJson('/api/reset-password', [
+    $response = postJson('/api/v1/reset-password', [
         'email' => 'registered@example.test',
         'token' => 'some-reset-token',
         'password' => 'short',
@@ -186,7 +186,7 @@ test('reset password cannot be requested more than 2 times per minute for the sa
     $email = 'same-email@example.test';
 
     for ($attempt = 1; $attempt <= 2; $attempt++) {
-        $response = postJson('/api/reset-password', [
+        $response = postJson('/api/v1/reset-password', [
             'email' => $email,
             'token' => 'invalid-reset-token',
             'password' => 'New-password-456!',
@@ -196,7 +196,7 @@ test('reset password cannot be requested more than 2 times per minute for the sa
         $response->assertUnprocessable();
     }
 
-    $response = postJson('/api/reset-password', [
+    $response = postJson('/api/v1/reset-password', [
         'email' => $email,
         'token' => 'invalid-reset-token',
         'password' => 'New-password-456!',
@@ -211,7 +211,7 @@ test('reset password cannot be requested more than 5 times per hour for the same
 
     $this->freezeTime(function () use ($email): void {
         for ($attempt = 1; $attempt <= 5; $attempt++) {
-            $response = postJson('/api/reset-password', [
+            $response = postJson('/api/v1/reset-password', [
                 'email' => $email,
                 'token' => 'invalid-reset-token',
                 'password' => 'New-password-456!',
@@ -225,7 +225,7 @@ test('reset password cannot be requested more than 5 times per hour for the same
             }
         }
 
-        $response = postJson('/api/reset-password', [
+        $response = postJson('/api/v1/reset-password', [
             'email' => $email,
             'token' => 'invalid-reset-token',
             'password' => 'New-password-456!',
@@ -238,7 +238,7 @@ test('reset password cannot be requested more than 5 times per hour for the same
 
 test('reset password cannot be requested more than 10 times from the same IP', function () {
     for ($attempt = 1; $attempt <= 10; $attempt++) {
-        $response = postJson('/api/reset-password', [
+        $response = postJson('/api/v1/reset-password', [
             'email' => "ip-limit-{$attempt}@example.test",
             'token' => 'invalid-reset-token',
             'password' => 'New-password-456!',
@@ -248,7 +248,7 @@ test('reset password cannot be requested more than 10 times from the same IP', f
         $response->assertUnprocessable();
     }
 
-    $response = postJson('/api/reset-password', [
+    $response = postJson('/api/v1/reset-password', [
         'email' => 'ip-limit-final@example.test',
         'token' => 'invalid-reset-token',
         'password' => 'New-password-456!',

@@ -14,8 +14,8 @@ test('authenticated user can logout', function () {
 
     $token = $user->createToken('auth-token');
 
-    $response = postJson('/api/logout', [], [
-        'Authorization' => 'Bearer ' . $token->plainTextToken,
+    $response = postJson('/api/v1/logout', [], [
+        'Authorization' => 'Bearer '.$token->plainTextToken,
     ]);
 
     $response->assertOk();
@@ -31,7 +31,7 @@ test('authenticated user can logout', function () {
 
 test('guest cannot logout', function () {
 
-    $response = postJson('/api/logout');
+    $response = postJson('/api/v1/logout');
 
     $response->assertUnauthorized();
 });
